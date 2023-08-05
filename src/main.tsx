@@ -1,3 +1,4 @@
+import './globals.css';
 import "@rainbow-me/rainbowkit/styles.css";
 import { RainbowKitProvider } from "@rainbow-me/rainbowkit";
 import * as React from "react";

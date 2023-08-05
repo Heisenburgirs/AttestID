@@ -1,7 +1,7 @@
-import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount } from "wagmi";
 
 import { Attestooooooor } from "./components";
+import { Header } from "./components/header/Header";
 
 export function App() {
   /**
@@ -11,12 +11,8 @@ export function App() {
   const { isConnected } = useAccount();
 
   return (
-    <>
-      <h1>OP Starter Project</h1>
-
-      {/** @see https://www.rainbowkit.com/docs/connect-button */}
-      <ConnectButton />
-
+    <div className="flex flex-col px-8 py-4">
+      <Header />
       {isConnected && (
         <>
           <hr />
@@ -24,6 +20,6 @@ export function App() {
           <hr />
         </>
       )}
-    </>
+    </div>
   );
 }
