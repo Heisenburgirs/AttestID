@@ -2,6 +2,7 @@ import { useAccount } from "wagmi";
 
 import { Attestooooooor } from "./components";
 import { Header } from "./components/header/Header";
+import { Main } from "./components/main/main";
 
 export function App() {
   /**
@@ -11,15 +12,16 @@ export function App() {
   const { isConnected } = useAccount();
 
   return (
-    <div className="flex flex-col px-8 py-4">
+    <div className="flex flex-col gap-12">
       <Header />
-      {isConnected && (
+      <Main />
+      {/*{isConnected && (
         <>
           <hr />
           <Attestooooooor />
           <hr />
         </>
-      )}
+      )}*/}
     </div>
   );
 }
