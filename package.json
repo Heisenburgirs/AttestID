@@ -1,10 +1,10 @@
 {
   "name": "optimism-starter",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "private": true,
   "scripts": {
     "anvil": "source .env && anvil --fork-url $ANVIL_FORK_URL --chain-id $ANVIL_CHAIN_ID",
-    "deploy": "source .env && forge create contracts/src/Counter.sol:Counter --rpc-url $FORGE_RPC_URL --private-key $FORGE_PRIVATE_KEY --etherscan-api-key $ETHERSCAN_API_KEY --verify",
+    "deploy": "forge create contracts/src/AttestId.sol:AttestId --rpc-url $FORGE_RPC_URL --constructor-args $WORLD_ID $WORLD_APP_ID $WORLD_ACTION_ID --private-key $FORGE_PRIVATE_KEY --etherscan-api-key $ETHERSCAN_API_KEY --verify",
     "deploy:anvil": "source .env && forge create contracts/src/AttestationStation.sol:AttestationStation --rpc-url http://127.0.0.1:8545 --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 --legacy",
     "dev": "npm run wagmi && vite",
     "dev:foundry": "npm run dev & wagmi generate --watch & npm run anvil",
@@ -31,6 +31,8 @@
     "@worldcoin/idkit": "^0.5.1",
     "autoprefixer": "^10.4.14",
     "buffer": "^6.0.3",
+    "ethers": "^6.7.0",
+    "ethers-utils": "^2.1.11",
     "postcss": "^8.4.27",
     "prettier-plugin-tailwindcss": "^0.4.1",
     "process": "^0.11.10",

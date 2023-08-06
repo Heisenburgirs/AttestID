@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.11;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
@@ -30,7 +31,6 @@ contract AttestId is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
 
   constructor(
     address _worldId,
-    address _eas,
     string memory _appId,
     string memory _actionId
   ) ERC721("AttestID", "ATID") {
@@ -42,11 +42,7 @@ contract AttestId is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
     address signal,
     uint256 root,
     uint256 nullifierHash,
-    uint256[8] calldata proof,
-    uint256 schema,
-    uint256 expirationTime,
-    bool revocable,
-    bytes memory data
+    uint256[8] calldata proof
   ) public {
     require(!nullifierHashes[nullifierHash], "Nullifier has been used before");
 
@@ -82,10 +78,10 @@ contract AttestId is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
   // Overriding to prevent transfers
   function _beforeTokenTransfer(
     address from,
-    address,
-    uint256,
-    uint256
+    address to,
+    uint256 tokenId
   ) internal override(ERC721, ERC721Enumerable) {
+    super._beforeTokenTransfer(from, to, tokenId);
     require(from == address(0), "Transfers are disabled");
   }
 
@@ -101,12 +97,7 @@ contract AttestId is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
 
   function supportsInterface(
     bytes4 interfaceId
-  )
-    public
-    view
-    override(ERC721, ERC721Enumerable, ERC721URIStorage)
-    returns (bool)
-  {
+  ) public view override(ERC721, ERC721Enumerable) returns (bool) {
     return super.supportsInterface(interfaceId);
   }
 }

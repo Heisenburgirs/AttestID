@@ -1,5 +1,6 @@
 import { IDKitWidget, solidityEncode, CredentialType } from '@worldcoin/idkit'
 import { useAccount } from "wagmi";
+import { decodeAbiParameters } from 'viem'
 
 export const Main = () => {
 
@@ -10,7 +11,9 @@ export const Main = () => {
     console.log('Nullifier Hash:', response.nullifier_hash);
     console.log('Proof:', response.proof);
     console.log('Credential Type:', response.credential_type);
-
+    const unpackedProof = decodeAbiParameters([{ type: 'uint256[8]' }], response.proof)[0] as BigInt[]
+    const unpackedProofStrings = unpackedProof.map(value => value.toString());
+    console.log(unpackedProofStrings);
   }
 
   return (
