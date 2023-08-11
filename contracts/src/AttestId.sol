@@ -1,103 +1,72 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.11;
-
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/Counters.sol";
+pragma solidity ^0.8.13;
 
 import {ByteHasher} from "./helpers/ByteHasher.sol";
 import {IWorldID} from "./interfaces/IWorldID.sol";
 
-contract AttestId is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
-  using Counters for Counters.Counter;
+contract Contract {
+  using ByteHasher for bytes;
 
-  Counters.Counter private _tokenIdCounter;
+  ///////////////////////////////////////////////////////////////////////////////
+  ///                                  ERRORS                                ///
+  //////////////////////////////////////////////////////////////////////////////
 
-  IWorldID public worldId;
+  /// @notice Thrown when attempting to reuse a nullifier
+  error InvalidNullifier();
 
-  uint256 public externalNullifier;
-  uint256 public groupId = 1;
-  mapping(uint256 => bool) public nullifierHashes;
+  /// @dev The World ID instance that will be used for verifying proofs
+  IWorldID internal immutable worldId;
 
-  // Adding the VerificationSuccess event
-  event VerificationSuccess(
-    address indexed user,
-    uint256 proofTxHash,
-    uint256 attestTxHash,
-    string platformID
-  );
+  /// @dev The contract's external nullifier hash
+  string internal _appId;
 
-  constructor(
-    address _worldId,
-    string memory _appId,
-    string memory _actionId
-  ) ERC721("AttestID", "ATID") {
-    worldId = IWorldID(_worldId);
-    externalNullifier = uint256(keccak256(abi.encodePacked(_appId, _actionId)));
+  /// @dev The World ID group ID (always 1)
+  uint256 internal immutable groupId = 1;
+
+  /// @dev Whether a nullifier hash has been used already. Used to guarantee an action is only performed once by a single person
+  mapping(uint256 => bool) internal nullifierHashes;
+
+  /// @param _worldId The WorldID instance that will verify the proofs
+  /// @param appId The World ID app ID
+  constructor(IWorldID _worldId, string memory appId) {
+    worldId = _worldId;
+    _appId = appId;
   }
 
+  /// @param signal An arbitrary input from the user, usually the user's wallet address (check README for further details)
+  /// @param root The root of the Merkle tree (returned by the JS widget).
+  /// @param nullifierHash The nullifier hash for this proof, preventing double signaling (returned by the JS widget).
+  /// @param proof The zero-knowledge proof that demonstrates the claimer is registered with World ID (returned by the JS widget).
+  /// @dev Feel free to rename this method however you want! We've used `claim`, `verify` or `execute` in the past.
   function verifyAndExecute(
     address signal,
     uint256 root,
     uint256 nullifierHash,
-    uint256[8] calldata proof
+    uint256[8] calldata proof,
+    string memory _actionId
   ) public {
-    require(!nullifierHashes[nullifierHash], "Nullifier has been used before");
+    // Calculate externalNullifier dynamically based on _actionId
+    uint256 externalNullifier = abi
+      .encodePacked(abi.encodePacked(_appId).hashToField(), _actionId)
+      .hashToField();
 
+    // First, we make sure this person hasn't done this before
+    if (nullifierHashes[nullifierHash]) revert InvalidNullifier();
+
+    // We now verify the provided proof is valid and the user is verified by World ID
     worldId.verifyProof(
       root,
       groupId,
-      uint256(keccak256(abi.encodePacked(signal))),
+      abi.encodePacked(signal).hashToField(),
       nullifierHash,
       externalNullifier,
       proof
     );
 
+    // We now record the user has done this, so they can't do it again (proof of uniqueness)
     nullifierHashes[nullifierHash] = true;
 
-    // Emitting the VerificationSuccess event with relevant data
-    emit VerificationSuccess(
-      msg.sender,
-      uint256(blockhash(block.number - 1)),
-      uint256(blockhash(block.number)),
-      "WorldID"
-    );
-
-    _mintNFT(msg.sender, "IPFS_LINK_HERE");
-  }
-
-  function _mintNFT(address recipient, string memory uri) internal {
-    _tokenIdCounter.increment();
-    uint256 tokenId = _tokenIdCounter.current();
-    _safeMint(recipient, tokenId);
-    _setTokenURI(tokenId, uri);
-  }
-
-  // Overriding to prevent transfers
-  function _beforeTokenTransfer(
-    address from,
-    address to,
-    uint256 tokenId
-  ) internal override(ERC721, ERC721Enumerable) {
-    super._beforeTokenTransfer(from, to, tokenId);
-    require(from == address(0), "Transfers are disabled");
-  }
-
-  function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {
-    super._burn(tokenId);
-  }
-
-  function tokenURI(
-    uint256 tokenId
-  ) public view override(ERC721, ERC721URIStorage) returns (string memory) {
-    return super.tokenURI(tokenId);
-  }
-
-  function supportsInterface(
-    bytes4 interfaceId
-  ) public view override(ERC721, ERC721Enumerable) returns (bool) {
-    return super.supportsInterface(interfaceId);
+    // Finally, execute your logic here, for example issue a token, NFT, etc...
+    // Make sure to emit some kind of event afterwards!
   }
 }

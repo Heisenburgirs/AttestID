@@ -19,21 +19,25 @@ export const Header = () => {
           <div>AttestId</div>
         </div>
 
-        <div className="relative group sm:hidden md:block">
-          {/* The Profile trigger */}
-          <div className="flex gap-4 items-center">
-            <div className="hover:underline cursor-pointer shadow-md px-4 py-2 rounded-[15px] font-bold text-base">Profile</div>
-            <ConnectButton />
-          </div>
-
-          {/* Invisible bridge */}
-          <div className="absolute left-0 w-full h-[10px] bg-transparent group-hover:block hidden"></div>
-
-          {/* The dropdown menu */}
-          <div className="absolute rounded-[15px] mt-2 left-0 w-48 bg-white border border-gray-200 divide-y divide-gray-100 rounded-md shadow-lg group-hover:block hidden">
-            <div className="p-2">
-              <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-[15px] font-bold">Activity</a>
+        <div className="flex gap-4">
+          <div className="relative group sm:hidden md:block">
+            {/* The Profile trigger */}
+            <div className="flex gap-4 items-center">
+              <div className="hover:underline cursor-pointer shadow-md px-4 py-2 rounded-[15px] font-bold text-base">Profile</div>
             </div>
+
+            {/* Invisible bridge */}
+            <div className="absolute left-0 w-full h-[10px] bg-transparent group-hover:block hidden"></div>
+
+            {/* The dropdown menu */}
+            <div className="absolute rounded-[15px] mt-2 left-0 w-48 bg-white border border-gray-200 divide-y divide-gray-100 rounded-md shadow-lg group-hover:block hidden">
+              <div className="p-2">
+                <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-[15px] font-bold">Activity</a>
+              </div>
+            </div>
+          </div>
+          <div className="sm:hidden md:block">
+            <ConnectButton  />
           </div>
         </div>
 
