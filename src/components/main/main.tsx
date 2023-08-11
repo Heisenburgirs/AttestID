@@ -1,20 +1,82 @@
-import { IDKitWidget, solidityEncode, CredentialType } from '@worldcoin/idkit'
+import { useState, useEffect } from "react";
+import { IDKitWidget, CredentialType } from "@worldcoin/idkit"
+import { createWalletClient } from "viem"
 import { useAccount } from "wagmi";
-import { decodeAbiParameters } from 'viem'
+import { decodeAbiParameters } from "viem"
+import { Contract } from "@ethersproject/contracts";
+import { ethers } from "ethers";
+import { ON_CHAIN_WORLD_ID } from "../constants/constants"
+import ABI from "../constants/abi.json"
+
+declare global {
+  interface Window {
+    ethereum: any;
+  }
+}
 
 export const Main = () => {
+  const [userAddress, setUserAddress] = useState<`0x${string}` | null>(null);
+  const [merkleRoot, setMerkleRoot] = useState("");
+  const [nullifierHash, setNullifierHash] = useState("");
+  const [proof, setProof] = useState<string[]>([]);
+  const [credentialType, setCredentialType] = useState("");
+  const [actionId, setActionId] = useState("");
+  const [signal, setSignal] = useState("");
 
-  const { address } = useAccount()
+  const txHash = "0xccd33a28e623e64cad3c9be10d625206fdd291b4faa20e30b3596ab5cdddc09f";
+  const block = "13168067";
 
-  const onSuccess = (response: any) => {
-    console.log('Merkle Root:', response.merkle_root);
-    console.log('Nullifier Hash:', response.nullifier_hash);
-    console.log('Proof:', response.proof);
-    console.log('Credential Type:', response.credential_type);
-    const unpackedProof = decodeAbiParameters([{ type: 'uint256[8]' }], response.proof)[0] as BigInt[]
+  const { address } = useAccount();
+
+  // Update userAddress whenever the address changes
+  useEffect(() => {
+    setUserAddress(address ?? null);
+  }, [address]);
+
+  const onSuccess = async (response: any) => {
+    setMerkleRoot(response.merkle_root)
+    console.log("Merkle Root:", merkleRoot);
+    setNullifierHash(response.nullifier_hash)
+    console.log("Nullifier Hash:", nullifierHash);
+    const unpackedProof = decodeAbiParameters([{ type: "uint256[8]" }], response.proof)[0] as BigInt[]
     const unpackedProofStrings = unpackedProof.map(value => value.toString());
-    console.log("address", address)
-    console.log(unpackedProofStrings);
+    setProof(unpackedProofStrings);
+    console.log("Proof:", proof);
+    setCredentialType(response.credential_type);
+    console.log("Credential Type:", credentialType);
+  }
+
+  const test = async (response: any) => {
+    console.log("Merkle Root:", merkleRoot);
+    console.log("Nullifier Hash:", nullifierHash);
+    console.log("Proof:", proof);
+    console.log("Credential Type:", credentialType);
+
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const signer = provider.getSigner();
+    const contract = new Contract(ON_CHAIN_WORLD_ID, ABI, signer);
+    console.log("provider", provider)
+
+    // Call contract method
+    try {
+        const txResponse = await contract.verifyAndExecute(
+          merkleRoot,
+          nullifierHash,
+          proof,
+          "attest-uniqueness"
+          );
+        const receipt = await txResponse.wait();
+        console.log("Transaction successful:", receipt);
+    } catch (err) {
+        console.error("Error executing transaction:", err);
+    }
+  }
+
+  const test2 = async (response: any) => {
+    console.log("Merkle Root:", merkleRoot);
+    console.log("Nullifier Hash:", nullifierHash);
+    console.log("Proof:", proof);
+    console.log("Credential Type:", credentialType);
   }
 
   return (
@@ -38,6 +100,8 @@ export const Main = () => {
               Verify
             </button>}
           </IDKitWidget>
+          <button className="hover:cursor-pointer" onClick={test}>test</button>
+          <button className="hover:cursor-pointer" onClick={test2}>test2</button>
         </div>
       </div>
     </div>

@@ -1,6 +1,5 @@
 import { useAccount } from "wagmi";
 
-import { Attestooooooor } from "./components";
 import { Header } from "./components/header/Header";
 import { Main } from "./components/main/main";
 
