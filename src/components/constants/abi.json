@@ -2,6 +2,60 @@
 	{
 		"inputs": [
 			{
+				"internalType": "bytes32",
+				"name": "schema",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "address",
+				"name": "attestId",
+				"type": "address"
+			},
+			{
+				"internalType": "string",
+				"name": "lastAttest",
+				"type": "string"
+			},
+			{
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			},
+			{
+				"internalType": "uint8",
+				"name": "credentialType",
+				"type": "uint8"
+			},
+			{
+				"internalType": "uint32",
+				"name": "blockData",
+				"type": "uint32"
+			},
+			{
+				"internalType": "string",
+				"name": "hash",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "signal",
+				"type": "string"
+			}
+		],
+		"name": "attestData",
+		"outputs": [
+			{
+				"internalType": "bytes32",
+				"name": "",
+				"type": "bytes32"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
 				"internalType": "contract IWorldID",
 				"name": "_worldId",
 				"type": "address"
@@ -10,10 +64,20 @@
 				"internalType": "string",
 				"name": "appId",
 				"type": "string"
+			},
+			{
+				"internalType": "contract IEAS",
+				"name": "eas",
+				"type": "address"
 			}
 		],
 		"stateMutability": "nonpayable",
 		"type": "constructor"
+	},
+	{
+		"inputs": [],
+		"name": "InvalidEAS",
+		"type": "error"
 	},
 	{
 		"inputs": [],
