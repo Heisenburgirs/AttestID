@@ -38,7 +38,7 @@
 			},
 			{
 				"internalType": "string",
-				"name": "signal",
+				"name": "action",
 				"type": "string"
 			}
 		],
@@ -115,6 +115,26 @@
 		"name": "verifyAndExecute",
 		"outputs": [],
 		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "verifyAndExecuteMock",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "number",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
 		"type": "function"
 	}
 ]

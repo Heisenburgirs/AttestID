@@ -3,6 +3,8 @@ import "@rainbow-me/rainbowkit/styles.css";
 import { RainbowKitProvider } from "@rainbow-me/rainbowkit";
 import * as React from "react";
 import * as ReactDOM from "react-dom/client";
+import { ApolloProvider } from "@apollo/client";
+import client from "./components/apollo/apollo"
 import { WagmiConfig } from "wagmi";
 
 import { App } from "./App";
@@ -16,10 +18,12 @@ import { chains, config } from "./wagmi";
  */
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <WagmiConfig config={config}>
-      <RainbowKitProvider chains={chains}>
-        <App />
-      </RainbowKitProvider>
-    </WagmiConfig>
+      <WagmiConfig config={config}>
+        <RainbowKitProvider chains={chains}>
+          <ApolloProvider client={client}>
+            <App />
+          </ApolloProvider>
+        </RainbowKitProvider>
+      </WagmiConfig>
   </React.StrictMode>
 );

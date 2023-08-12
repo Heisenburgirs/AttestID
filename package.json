@@ -1,6 +1,6 @@
 {
   "name": "optimism-starter",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "private": true,
   "scripts": {
     "anvil": "source .env && anvil --fork-url $ANVIL_FORK_URL --chain-id $ANVIL_CHAIN_ID",
@@ -16,6 +16,7 @@
     "wagmi": "wagmi generate"
   },
   "dependencies": {
+    "@apollo/client": "^3.8.1",
     "@eth-optimism/atst": "^0.0.0-20230306200511",
     "@eth-optimism/contracts-bedrock": "^0.12.1",
     "@eth-optimism/contracts-periphery": "^1.0.7",
@@ -33,6 +34,7 @@
     "buffer": "^6.0.3",
     "ethers": "^5.7.2",
     "ethers-utils": "^2.1.11",
+    "graphql": "^16.7.1",
     "postcss": "^8.4.27",
     "prettier-plugin-tailwindcss": "^0.4.1",
     "process": "^0.11.10",
