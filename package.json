@@ -1,6 +1,6 @@
 {
   "name": "optimism-starter",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "private": true,
   "scripts": {
     "anvil": "source .env && anvil --fork-url $ANVIL_FORK_URL --chain-id $ANVIL_CHAIN_ID",
@@ -38,6 +38,7 @@
     "postcss": "^8.4.27",
     "prettier-plugin-tailwindcss": "^0.4.1",
     "process": "^0.11.10",
+    "qrcode.react": "^3.1.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "util": "^0.12.4",

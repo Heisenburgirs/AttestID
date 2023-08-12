@@ -14,9 +14,34 @@ import { EAS, SchemaEncoder } from "@ethereum-attestation-service/eas-sdk";
 import { useQuery } from "@apollo/client";
 import { FETCH_ATTESTATIONS } from "../queries/graph";
 
+type Attestation = {
+  id: string;
+  attester: string;
+  recipient: string;
+  refUID: string;
+  revocable: boolean;
+  revocationTime: number;
+  expirationTime: number;
+  data: string;
+};
+
 const VerifyWorldId = () => {
   const { loading, error, data } = useQuery(FETCH_ATTESTATIONS);
   const test = () => {
+    if (data && data.attestations) {
+      // This is just the first attestation as per your request
+      const attestation = data.attestations[0];
+
+      // Define the ABI structure
+      const abiSchema = "address attestId, string lastAttest, address user, uint8 credentialType, uint32 block, string hash, string action";
+
+      // Initialize the SchemaEncoder
+      const schemaEncoder = new SchemaEncoder(abiSchema);
+
+      // Decode the data
+      const decodedData = schemaEncoder.decodeData(attestation.data);
+      console.log(decodedData);
+    }
     console.log(data)
   }
 
@@ -36,8 +61,6 @@ const VerifyWorldId = () => {
   const [flowFailed, setFlowFailed] = useState(false);
   const [flowError, setFlowError] = useState("");
   const [userAddress, setUserAddress] = useState<`0x${string}` | null>(null);
-
-  const [proofVerificationHash, setProofVerificationHash] = useState("");
 
   const { address } = useAccount();
 
@@ -67,11 +90,6 @@ const VerifyWorldId = () => {
 
     // Call verifyAndExecute method to verify proof
     try {
-      console.log(userAddress)
-      console.log(response.merkle_root)
-      console.log(response.nullifier_hash)
-      console.log(unpackedProofStrings)
-      console.log(ACTION_ID_UNIQUENESS)
       {/*const txResponse1 = await contract.verifyAndExecute(
           userAddress,
           response.merkle_root,
@@ -91,34 +109,34 @@ const VerifyWorldId = () => {
       // If the above is successful, we proceed with attesting
       setAttesting(true)
 
+      if (loading) {
+        console.log("Data is still being fetched");
+        return;
+      }
 
-      const { loading, error, data } = useQuery(FETCH_ATTESTATIONS);
+      if (error) {
+          console.error("Error fetching data:", error);
+          return;
+      }
 
-      const lastAttestPlaceholder="test"
+      const lastAttestPlaceholder = data.attestations[0].id;
 
       try {
-        {/*console.log(ON_CHAIN_ATTEST_UID)
-        console.log(ON_CHAIN_WORLD_ID_CONTRACT)
         console.log(lastAttestPlaceholder)
-        console.log(userAddress)
-        console.log(CREDENTIAL_TYPE_ORB)
-        console.log(blockNumber)
-        console.log(transactionHash)
-        console.log(ACTION_ID_UNIQUENESS)*/}
           const txResponse2 = await contract.attestData(
             ON_CHAIN_ATTEST_UID,
             ON_CHAIN_WORLD_ID_CONTRACT,
-            lastAttestPlaceholder,
+            lastAttestPlaceholder ?? "",
             userAddress,
             CREDENTIAL_TYPE_ORB,
             blockNumber,
             transactionHash,
             verificationType === "world" ? ACTION_ID_UNIQUENESS : ACTION_ID_TWITTER
           );
-          const receipt2 = await txResponse2.wait();
-          console.log("Transaction successful:", receipt2);
+          const receipt = await txResponse2.wait();
+          console.log("Transaction successful:", receipt);
           setAttesting(false)
-          setFlowSuccess(true)
+          setMinting(true)
       } catch (err) {
           console.error("Error executing transaction for attestData:", err);
           setFlowError(`Error executing transaction for attestData: ${err}`);
