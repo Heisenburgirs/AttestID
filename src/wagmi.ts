@@ -1,5 +1,5 @@
 import { configureChains, createConfig } from "wagmi";
-import { baseGoerli, optimismGoerli, zoraTestnet } from "wagmi/chains";
+import { baseGoerli, goerli, optimismGoerli, zoraTestnet } from "wagmi/chains";
 import { jsonRpcProvider } from "wagmi/providers/jsonRpc";
 // import { alchemyProvider } from "wagmi/providers/alchemy";
 import { getDefaultWallets } from "@rainbow-me/rainbowkit";
@@ -10,7 +10,7 @@ import { getDefaultWallets } from "@rainbow-me/rainbowkit";
  * @see https://wagmi.sh/react/providers/configuring-chains
  */
 const { chains, publicClient } = configureChains(
-  [baseGoerli, optimismGoerli, zoraTestnet],
+  [baseGoerli, optimismGoerli, zoraTestnet, goerli],
   [
     /**
      * Uncomment this line to use Alchemy as your provider

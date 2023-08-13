@@ -1,72 +1,136 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
-import {ByteHasher} from "./helpers/ByteHasher.sol";
-import {IWorldID} from "./interfaces/IWorldID.sol";
+import { ByteHasher } from './helpers/ByteHasher.sol';
+import { IWorldID } from './interfaces/IWorldID.sol';
+import { IEAS, AttestationRequest, AttestationRequestData } from "@ethereum-attestation-service/eas-contracts/contracts/IEAS.sol";
+import { NO_EXPIRATION_TIME, EMPTY_UID } from "@ethereum-attestation-service/eas-contracts/contracts/Common.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
+import "https://github.com/LayerZero-Labs/solidity-examples/blob/main/contracts/lzApp/NonblockingLzApp.sol";
 
-contract Contract {
-  using ByteHasher for bytes;
+contract AttestId is ERC721Enumerable, NonblockingLzApp {
+    using ByteHasher for bytes;
+    using Counters for Counters.Counter;
+    Counters.Counter private _tokenIdCounter;
 
-  ///////////////////////////////////////////////////////////////////////////////
-  ///                                  ERRORS                                ///
-  //////////////////////////////////////////////////////////////////////////////
+    uint16 destChainId;
 
-  /// @notice Thrown when attempting to reuse a nullifier
-  error InvalidNullifier();
+    // Mock function constant
+    uint256 public number = 0;
 
-  /// @dev The World ID instance that will be used for verifying proofs
-  IWorldID internal immutable worldId;
+    /// Errors
+    error InvalidEAS();
+    error InvalidNullifier();
 
-  /// @dev The contract's external nullifier hash
-  string internal _appId;
+    IWorldID internal immutable worldId;
+    string internal _appId;
+    uint256 internal immutable groupId = 1;
+    mapping(uint256 => bool) internal nullifierHashes;
 
-  /// @dev The World ID group ID (always 1)
-  uint256 internal immutable groupId = 1;
+    // EAS related state variable
+    IEAS private immutable _eas;
+    error TransfersNotAllowed();
+    mapping(uint256 => string) private _tokenURIs;
 
-  /// @dev Whether a nullifier hash has been used already. Used to guarantee an action is only performed once by a single person
-  mapping(uint256 => bool) internal nullifierHashes;
+    constructor(IWorldID _worldId, string memory appId, IEAS eas, address _lzEndpoint)
+        ERC721("AttestID", "AID")
+        NonblockingLzApp(_lzEndpoint)
+    {
+        worldId = _worldId;
+        _appId = appId;
+        if (address(eas) == address(0)) {
+            revert InvalidEAS();
+        }
+        _eas = eas;
 
-  /// @param _worldId The WorldID instance that will verify the proofs
-  /// @param appId The World ID app ID
-  constructor(IWorldID _worldId, string memory appId) {
-    worldId = _worldId;
-    _appId = appId;
-  }
+        if (_lzEndpoint == 0xae92d5aD7583AD66E49A0c67BAd18F6ba52dDDc1) destChainId = 10160;
+        if (_lzEndpoint == 0x6aB5Ae6822647046626e83ee6dB8187151E1d5ab) destChainId = 10132;
+    }
 
-  /// @param signal An arbitrary input from the user, usually the user's wallet address (check README for further details)
-  /// @param root The root of the Merkle tree (returned by the JS widget).
-  /// @param nullifierHash The nullifier hash for this proof, preventing double signaling (returned by the JS widget).
-  /// @param proof The zero-knowledge proof that demonstrates the claimer is registered with World ID (returned by the JS widget).
-  /// @dev Feel free to rename this method however you want! We've used `claim`, `verify` or `execute` in the past.
-  function verifyAndExecute(
-    address signal,
-    uint256 root,
-    uint256 nullifierHash,
-    uint256[8] calldata proof,
-    string memory _actionId
-  ) public {
-    // Calculate externalNullifier dynamically based on _actionId
-    uint256 externalNullifier = abi
-      .encodePacked(abi.encodePacked(_appId).hashToField(), _actionId)
-      .hashToField();
+	// Verify WorldID proof
+    function verifyAndExecute(address signal, uint256 root, uint256 nullifierHash, uint256[8] calldata proof, string memory _actionId) public {
+        uint256 externalNullifier = abi.encodePacked(abi.encodePacked(_appId).hashToField(), _actionId).hashToField();
+        if (nullifierHashes[nullifierHash]) revert InvalidNullifier();
+        worldId.verifyProof(
+            root,
+            groupId,
+            abi.encodePacked(signal).hashToField(),
+            nullifierHash,
+            externalNullifier,
+            proof
+        );
+        nullifierHashes[nullifierHash] = true;
+    }
 
-    // First, we make sure this person hasn't done this before
-    if (nullifierHashes[nullifierHash]) revert InvalidNullifier();
+	// Mock WorldId proof verification
+	function verifyAndExecuteMock() public {
+        number += 1; // Increment the value of number by 1 every time this function is called
+    }
 
-    // We now verify the provided proof is valid and the user is verified by World ID
-    worldId.verifyProof(
-      root,
-      groupId,
-      abi.encodePacked(signal).hashToField(),
-      nullifierHash,
-      externalNullifier,
-      proof
-    );
+    // EAS attestation
+    function attestData(
+    bytes32 schema, // schema address
+    address attestId, // AttestId contract
+    string memory lastAttest, // last attest by AttestId
+    address user, // recipient of attestation
+    uint8 credentialType, // credential type of worldId
+    uint32 blockData, // blocktime for worldId proof
+    string memory hash, // hash of worldId proof
+    string memory action // action of worldId proof
+	) external returns (bytes32) {
+		bytes memory encodedData = abi.encode(attestId, lastAttest, user, credentialType, blockData, hash, action);
 
-    // We now record the user has done this, so they can't do it again (proof of uniqueness)
-    nullifierHashes[nullifierHash] = true;
+		return _eas.attest(
+			AttestationRequest({
+				schema: schema,
+				data: AttestationRequestData({
+					recipient: user,
+					expirationTime: NO_EXPIRATION_TIME,
+					revocable: true,
+					refUID: EMPTY_UID,
+					data: encodedData,
+					value: 0
+				})
+			})
+		);
+	}
 
-    // Finally, execute your logic here, for example issue a token, NFT, etc...
-    // Make sure to emit some kind of event afterwards!
-  }
+	// Mint NFT to msg.sender on multiple chains using LZ
+	function mintNFT(string memory _uri) public payable {
+        _tokenIdCounter.increment();
+        uint256 newItemId = _tokenIdCounter.current();
+        _mint(msg.sender, newItemId);
+        _setTokenURI(newItemId, _uri);
+
+        // Send cross-chain message after minting
+        bytes memory payload = abi.encode(msg.sender, _uri);
+        _lzSend(destChainId, payload, payable(msg.sender), address(0x0), bytes(""), msg.value);
+    }
+
+	function _nonblockingLzReceive(uint16, bytes memory, uint64, bytes memory _payload) internal override {
+       // intentionally left empty
+    }
+
+    function trustAddress(address _otherContract) public onlyOwner {
+        trustedRemoteLookup[destChainId] = abi.encodePacked(_otherContract, address(this));
+    }
+
+	// Custom tokenURI storage
+	function _setTokenURI(uint256 tokenId, string memory uri) internal virtual {
+    require(_exists(tokenId), "ERC721URI: URI set of nonexistent token");
+    _tokenURIs[tokenId] = uri;
+	}
+
+	// Return appropriate URI
+	function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
+    require(_exists(tokenId), "ERC721URI: URI query for nonexistent token");
+    return _tokenURIs[tokenId];
+	}
+
+	// Overriding functions to prevent transfers
+    function transferFrom(address /* from */, address /* to */, uint256 /* tokenId */) public pure override(ERC721, IERC721) {
+    revert TransfersNotAllowed();
+	}
 }
