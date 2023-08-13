@@ -1,6 +1,4 @@
-import { useState, useEffect } from "react";
 import VerifyWorldId from "../widget/worldId";
-import NFTComponent from "../nft/NFT";
 
 declare global {
   interface Window {

@@ -1,5 +1,6 @@
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useAccount } from "wagmi";
 
 export const Header = () => {
@@ -32,7 +33,7 @@ export const Header = () => {
             {/* The dropdown menu */}
             <div className="absolute rounded-[15px] mt-2 left-0 w-48 bg-white border border-gray-200 divide-y divide-gray-100 rounded-md shadow-lg group-hover:block hidden">
               <div className="p-2">
-                <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-[15px] font-bold">Activity</a>
+                <Link to="/profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-[15px] font-bold">Profile </Link>
               </div>
             </div>
           </div>
