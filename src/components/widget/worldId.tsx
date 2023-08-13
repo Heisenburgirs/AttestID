@@ -13,17 +13,20 @@ import twitter from "../../../public/twitter.png"
 import { EAS, SchemaEncoder } from "@ethereum-attestation-service/eas-sdk";
 import { useQuery } from "@apollo/client";
 import { FETCH_ATTESTATIONS } from "../queries/graph";
+import { create } from 'ipfs-http-client';
+import { convertToPNG } from '../nft/NFT';
 
-type Attestation = {
-  id: string;
-  attester: string;
-  recipient: string;
-  refUID: string;
-  revocable: boolean;
-  revocationTime: number;
-  expirationTime: number;
-  data: string;
-};
+const PROJECT_ID="2TtmxSEQ33b1QC1siveGwLej3Dd"
+const PROJECT_SECRET="221f2611adc40c5a8c392d15322fb574"
+
+const ipfs = create({
+  host: 'ipfs.infura.io',
+  port: 5001,
+  protocol: 'https',
+  headers: {
+      Authorization: `Basic ${Buffer.from(`${PROJECT_ID}:${PROJECT_SECRET}`).toString('base64')}`
+  }
+});
 
 const VerifyWorldId = () => {
   const { loading, error, data } = useQuery(FETCH_ATTESTATIONS);
@@ -45,7 +48,6 @@ const VerifyWorldId = () => {
     console.log(data)
   }
 
-
   const [merkleRoot, setMerkleRoot] = useState("");
   const [nullifierHash, setNullifierHash] = useState("");
   const [proof, setProof] = useState<string[]>([]);
@@ -60,9 +62,17 @@ const VerifyWorldId = () => {
   const [flowSuccess, setFlowSuccess] = useState(false);
   const [flowFailed, setFlowFailed] = useState(false);
   const [flowError, setFlowError] = useState("");
+  const [closeButton, setCloseButton] = useState(false);
   const [userAddress, setUserAddress] = useState<`0x${string}` | null>(null);
 
   const { address } = useAccount();
+
+  const [blockNumber, setBlockNumber] = useState<number>(0)
+  const [proofTransactionHash, setProofTransactionHash] = useState<string>("")
+  const [attestationTransactionHash, setAttestationTransactionHash] = useState("")
+  const [previousAttestationHash, setPreviousAttestationHash] = useState("")
+  const [ipfsHash, setIpfsHash] = useState("")
+  const nftRef = React.useRef<HTMLDivElement>(null);
 
   // Update userAddress whenever the address changes
   useEffect(() => {
@@ -104,6 +114,11 @@ const VerifyWorldId = () => {
       console.log("Transaction successful:", receipt);
       const { blockNumber, transactionHash } = receipt;
 
+      // Set global state for WorldId verification txhash and blocknumber
+      setBlockNumber(blockNumber);
+      setProofTransactionHash(transactionHash);
+
+      // Proof verified
       setVerifyingProof(false)
 
       // If the above is successful, we proceed with attesting
@@ -119,8 +134,11 @@ const VerifyWorldId = () => {
           return;
       }
 
+      // Get last attestation to user from AttestID contract
       const lastAttestPlaceholder = data.attestations[0].id;
+      setPreviousAttestationHash(lastAttestPlaceholder)
 
+      // Attest onchain to WorldID onchain proof verification
       try {
         console.log(lastAttestPlaceholder)
           const txResponse2 = await contract.attestData(
@@ -135,25 +153,105 @@ const VerifyWorldId = () => {
           );
           const receipt = await txResponse2.wait();
           console.log("Transaction successful:", receipt);
+          // Get tx hash from attestData as to not confuse it with previous one
+          const attestTransactionHash = receipt.transactionHash;
+          // Set tx hash of attestData
+          setAttestationTransactionHash(attestTransactionHash)
           setAttesting(false)
+
+          // Start of minting logic
           setMinting(true)
+
+          try {
+
+            console.log("test", nftRef.current)
+
+            // Convert component to PNG
+            // @ts-ignore
+            const pngDataUrl = await convertToPNG(nftRef.current);
+
+            // Convert data URL to a buffer
+            const pngBuffer = Buffer.from(pngDataUrl.replace('data:image/png;base64,', ''), 'base64');
+
+            // Pin Component PNG to IPFS
+            const result = await ipfs.add(pngBuffer);
+
+            // Extract path
+            const ipfsCid = result.path;
+            console.log(ipfsCid)
+
+            // Set hash
+            setIpfsHash(ipfsCid)
+
+            // Set tx hashes, block time, credential type, issuer as attributes
+            const attributes = [
+              { key: 'proofTransactionHash', value: proofTransactionHash },
+              { key: 'attestationTransactionHash', value: attestationTransactionHash },
+              { key: 'previousAttestationHash', value: previousAttestationHash ?? "" },
+              { key: 'issuer', value: 'worldid' },
+              { key: 'credentialType', value: 1 },
+              { key: 'blocknumber', value: blockNumber }
+            ]
+
+            const tokenURI = {
+              userAddress: userAddress,
+              attributes: attributes,
+              image: `ipfs://${ipfsCid}`,
+            }
+
+            // Upload tokenData to IPFS
+            const metadataResult = await ipfs.add(Buffer.from(JSON.stringify(tokenURI)));
+            const metadataCid = metadataResult.path;
+
+            // TokenURI IPFS
+            const finalTokenURI = `ipfs://${metadataCid}`;
+
+            const txResponse3 = await contract.mintNFT(
+              finalTokenURI
+            );
+
+            const receipt = await txResponse3.wait();
+            console.log("Transaction successful:", receipt);
+
+            setFlowSuccess(true)
+            setCloseButton(true)
+
+          } catch (err) {
+            console.error("Error executing transaction for nft:", err);
+            setFlowError(`Error executing transaction for nft: ${err}`);
+            setFlowFailed(true)
+            setVerifyingProof(false)
+            setAttesting(false)
+            setMinting(false)
+            setFlowFailed(true)
+            setCloseButton(true)
+          }
+
       } catch (err) {
           console.error("Error executing transaction for attestData:", err);
           setFlowError(`Error executing transaction for attestData: ${err}`);
           setFlowFailed(true)
+          setVerifyingProof(false)
+          setAttesting(false)
+          setMinting(false)
+          setFlowFailed(true)
+          setCloseButton(true)
       }
 
     } catch (err) {
       console.error("Error executing transaction for verifyAndExecute:", err);
       setFlowError(`Error executing transaction for verifyAndExecute:", ${err}`)
+      setVerifyingProof(false)
+      setAttesting(false)
+      setMinting(false)
       setFlowFailed(true)
+      setCloseButton(true)
     }
   }
 
   return (
     <>
       <div className="w-full flex justify-between items-center shadow-md rounded-[50px] py-4 px-8">
-                      <button onClick={test}>test</button>
           <div className="w-[60px]">
               <img src={world} alt="Worldcoin" />
           </div>
@@ -177,29 +275,6 @@ const VerifyWorldId = () => {
               </IDKitWidget>
           </div>
       </div>
-      <div className="w-full flex justify-between items-center shadow-md rounded-[50px] py-4 px-8">
-          <div className="w-[60px]">
-              <img src={twitter} alt="Worldcoin" />
-          </div>
-          <div>
-              <IDKitWidget
-                  app_id="app_staging_0b0b08e01a86bb44b8b1014793304f6a"
-                  action={ACTION_ID_TWITTER}
-                  signal={userAddress ?? ""}
-                  onSuccess={onSuccess}
-                  credential_types={[CredentialType.Orb]}
-                  enableTelemetry
-              >
-                  {({ open }) =>
-                      <button onClick={() => {
-                        setVerificationType("twitter");
-                        open();
-                        }}  className="px-4 py-2 text-base rounded-[15px] shadow-md text-white bg-world hover:bg-blue-accent transition">
-                          Verify
-                      </button>}
-              </IDKitWidget>
-          </div>
-      </div>
       <Modal
         onClose={() => {
           setModalVisible(false);
@@ -213,6 +288,13 @@ const VerifyWorldId = () => {
         flowSuccess={flowSuccess}
         flowError={flowError}
         flowFailed={flowFailed}
+        closeButton={closeButton}
+        userAddress={userAddress}
+        blockNumber={blockNumber}
+        proofTransactionHash={proofTransactionHash}
+        attestationTransactionHash={attestationTransactionHash}
+        previousAttestationHash={previousAttestationHash}
+        setNftRef={nftRef}
         />
     </>
   );

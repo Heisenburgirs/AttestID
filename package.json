@@ -1,6 +1,6 @@
 {
   "name": "optimism-starter",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "private": true,
   "scripts": {
     "anvil": "source .env && anvil --fork-url $ANVIL_FORK_URL --chain-id $ANVIL_CHAIN_ID",
@@ -35,6 +35,9 @@
     "ethers": "^5.7.2",
     "ethers-utils": "^2.1.11",
     "graphql": "^16.7.1",
+    "html-to-image": "^1.11.11",
+    "ipfs-http-client": "^60.0.1",
+    "jsx-to-png": "^1.0.0-beta.1",
     "postcss": "^8.4.27",
     "prettier-plugin-tailwindcss": "^0.4.1",
     "process": "^0.11.10",
