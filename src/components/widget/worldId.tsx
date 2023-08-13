@@ -16,6 +16,7 @@ import { FETCH_ATTESTATIONS } from "../queries/graph";
 import { create } from 'ipfs-http-client';
 import { convertToPNG } from '../nft/NFT';
 
+// Infura IPFS
 const PROJECT_ID="2TtmxSEQ33b1QC1siveGwLej3Dd"
 const PROJECT_SECRET="221f2611adc40c5a8c392d15322fb574"
 
@@ -45,7 +46,7 @@ const VerifyWorldId = () => {
       const decodedData = schemaEncoder.decodeData(attestation.data);
       console.log(decodedData);
     }
-    console.log(data)
+    //console.log(data)
   }
 
   const [merkleRoot, setMerkleRoot] = useState("");
@@ -71,7 +72,6 @@ const VerifyWorldId = () => {
   const [proofTransactionHash, setProofTransactionHash] = useState<string>("")
   const [attestationTransactionHash, setAttestationTransactionHash] = useState("")
   const [previousAttestationHash, setPreviousAttestationHash] = useState("")
-  const [ipfsHash, setIpfsHash] = useState("")
   const nftRef = React.useRef<HTMLDivElement>(null);
 
   // Update userAddress whenever the address changes
@@ -100,16 +100,16 @@ const VerifyWorldId = () => {
 
     // Call verifyAndExecute method to verify proof
     try {
-      {/*const txResponse1 = await contract.verifyAndExecute(
+      const txResponse1 = await contract.verifyAndExecute(
           userAddress,
           response.merkle_root,
           response.nullifier_hash,
           unpackedProofStrings,
           ACTION_ID_UNIQUENESS
-      );*/}
+      );
 
       // Mock function
-      const txResponse1 = await contract.verifyAndExecuteMock();
+      //const txResponse1 = await contract.verifyAndExecuteMock();
       const receipt = await txResponse1.wait();
       console.log("Transaction successful:", receipt);
       const { blockNumber, transactionHash } = receipt;
@@ -164,8 +164,6 @@ const VerifyWorldId = () => {
 
           try {
 
-            console.log("test", nftRef.current)
-
             // Convert component to PNG
             // @ts-ignore
             const pngDataUrl = await convertToPNG(nftRef.current);
@@ -179,9 +177,6 @@ const VerifyWorldId = () => {
             // Extract path
             const ipfsCid = result.path;
             console.log(ipfsCid)
-
-            // Set hash
-            setIpfsHash(ipfsCid)
 
             // Set tx hashes, block time, credential type, issuer as attributes
             const attributes = [
@@ -206,6 +201,7 @@ const VerifyWorldId = () => {
             // TokenURI IPFS
             const finalTokenURI = `ipfs://${metadataCid}`;
 
+            // Mint NFT
             const txResponse3 = await contract.mintNFT(
               finalTokenURI
             );

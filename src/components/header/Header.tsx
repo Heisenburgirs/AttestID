@@ -22,10 +22,10 @@ export const Header = () => {
 
         <div className="flex gap-4">
           <div className="relative group sm:hidden md:block">
-            {/* The Profile trigger */}
+            {/* The Profile trigger
             <div className="flex gap-4 items-center">
               <div className="hover:underline cursor-pointer shadow-md px-4 py-2 rounded-[15px] font-bold text-base">Profile</div>
-            </div>
+            </div>*/}
 
             {/* Invisible bridge */}
             <div className="absolute left-0 w-full h-[10px] bg-transparent group-hover:block hidden"></div>
